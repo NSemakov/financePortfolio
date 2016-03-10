@@ -84,7 +84,6 @@ folderPathChosen = get(handles.FieldFolderName,'String');
 
 pathChosen=folderPathChosen;
 dirContent = dir(pathChosen);
-
 % resultArray=cell.empty;
 namesArray=cell(1);
 i=1;
@@ -106,8 +105,8 @@ for fileCount=1:length(dirContent)
     data = textscan(fid,'%s %s %s %s %s %s %s','headerlines', 1,  'delimiter', ';');
 %     if fileCount==3
         new=data{1,1}; %при первом прогоне забиваем столбец с датой
-        % выбираем только те файлы, где как минимум данные хотя бы за 80
-        % дней за год. (всего порядка 248 торговых дней)
+        % выбираем только те файлы, где как минимум данные почти за целый
+        % год. (всего порядка 248 дней)
         if length(new)<80
             fclose(fid);
             continue
@@ -129,7 +128,10 @@ for fileCount=1:length(dirContent)
             CurrentName;
             continue
         end
-
+        if length(dateArray)< 220
+            length(dateArray);
+        CurrentName;
+        end
         resultDateArray{:,i}=dateArray;
         
         namesArray{i}= strrep(CurrentName,'.csv',''); %имя без расширения .csv
@@ -163,6 +165,26 @@ if j ~=1
 %     namesArray=namesArray(:,[1:k-1,j,k+1:j-1,k,j+1:end]);
 end
 
+[fin, arrayOfIndexesAfterIntersect{1:length(resultDateArray)}] = mintersect(resultDateArray{:});
+
+resultDataArray=double.empty;
+for i=1:length(resultDateArray)
+    %обрезать текущий вектор и самый длинный сзади и спереди, т.к.
+    %способ аппрокцимации может быть любым.
+   [nonCommonVal,nonCommonInd]=setdiff(resultDateArray{i},fin);
+   deleteIndexes=zeros(1);
+   for k=1:length(nonCommonInd)
+      if nonCommonInd(k) < arrayOfIndexesAfterIntersect{i}(1) %|| nonCommonInd(k) > arrayOfIndexesAfterIntersect{i}(end)
+         deleteIndexes=[deleteIndexes k]; 
+      end
+   end
+   deleteIndexes=deleteIndexes(2:end); % убираем первый ноль.  
+   %убираем из основного массива первые и последние необщие элементы
+   resultArray{i}(nonCommonInd(deleteIndexes))=[];
+   resultDateArray{i}(nonCommonInd(deleteIndexes))=[];
+end
+
+
 %укорачиваем массив по последнему значению, которое имеет наименьшую из
 %всех дат. при этом это по-любому будет декабрь, т.к. выше стоит проверка,
 %что месяц = 12.
@@ -176,9 +198,9 @@ end
 [valOfMin,indOfMin]=min(lastDateInArray);
 benchmarkLastElement=resultDateArray{indOfMin}(end);
 
-
+resultDataArray=double.empty;
 for i=1:length(resultDateArray)
-if i==92
+if i==51
     a=234;
 end
 %Есть бенчмарковский элемент в массиве?
@@ -193,28 +215,17 @@ end
             resultDateArray{i}=resultDateArray{i}(1:row);
         end
     else %такого элемента в массиве нет
-        for j=1:90
+        for j=1:31
            searchForDay=valOfMin-j;
-%            if searchForDay<10
-%               searchForDay=['0' num2str(searchForDay)]; 
-%            end
-%            lastDateTemp=char(resultDateArray{i}(end)); %берем для образца типа '2012/12/30/
-%            [startIndex1,endIndex1] = regexp(lastDateTemp,'/12/');
-%            lastDateTemp(endIndex1+1:end)=num2str(searchForDay); %сконструировали искомую дату
-%            
-%            
-           formatIn = 'yyyy/mm/dd';
-           benchAsDate=datenum(benchmarkLastElement{:},formatIn);
-           benchAsDateAddedDay=addtodate(benchAsDate, -j, 'day');
-           
-           formatOut = 'yyyy/mm/dd';
-           benchAsDateAddedDayString=datestr(benchAsDateAddedDay,formatOut);
-
-           [row1,col1]=find(strcmpi(resultDateArray{i},benchAsDateAddedDayString));
+         
+           lastDateTemp=char(resultDateArray{i}(end)); %берем для образца типа '2012/12/30/
+           [startIndex1,endIndex1] = regexp(lastDateTemp,'/12/');
+           lastDateTemp(endIndex1+1:end)=num2str(searchForDay); %сконструировали искомую дату
+           [row1,col1]=find(strcmpi(resultDateArray{i},lastDateTemp));
             %сконструированная дата есть в массиве?
            if ~isempty(row1) %есть
                %заменяем пробелы полусуммами
-               for k=1:(j) %оно же =j
+               for k=1:(valOfMin-searchForDay) %оно же =j
                    
                    %cell в double
                    i1=row1+1; % индекс по которому нужно вставить
@@ -233,19 +244,10 @@ end
                    resultArray{i} = [resultArray{i}(1:i1-1,1)',b,resultArray{i}(i1:end,1)']';
                    
                    %вставляем дату.   
-%                    [startIndex2,endIndex2] = regexp(lastDateTemp,'/12/');
-                   
-                   
-                   formatIn = 'yyyy/mm/dd';
-                   benchAsDate=datenum(resultDateArray{i}(row1),formatIn);
-                   benchAsDateAddedDay=addtodate(benchAsDate, k, 'day');
-
-                   formatOut = 'yyyy/mm/dd';
-                   benchAsDateAddedDayString=datestr(benchAsDateAddedDay,formatOut); 
-                   
-%                    lastDateTemp(endIndex1+1:end)=num2str(searchForDay+k);
+                   [startIndex2,endIndex2] = regexp(lastDateTemp,'/12/');
+                   lastDateTemp(endIndex1+1:end)=num2str(searchForDay+k);
                    i1=row1+1; % индекс по которому нужно вставить
-                   b=benchAsDateAddedDayString;
+                   b=lastDateTemp;
                    resultDateArray{i}=[resultDateArray{i}(1:i1-1,1)',b,resultDateArray{i}(i1:end,1)']';
                    
                end
@@ -260,108 +262,16 @@ end
         end
     end
 end
-%теперь укорачиваем массив по первому значению, которое имеет наибольшую из
-%всех дат. при этом это по-любому будет январь, т.к. выше стоит проверка,
-%что месяц = 1.
-firstDateInArray=zeros(1,length(resultDateArray));
-for k=1:length(resultDateArray)
-  firstDateTemp=char(resultDateArray{k}(1)); 
-  [startIndex1,endIndex1] = regexp(firstDateTemp,'/01/');
-  day=firstDateTemp(endIndex1+1:end);
-  firstDateInArray(1,k)= str2num(day);
-end
-[valOfMin,indOfMin]=max(firstDateInArray);
-benchmarkFirstElement=resultDateArray{indOfMin}(1);
 
-
-for i=1:length(resultDateArray)
-if i==6
-    a=234;
-end
-%Есть бенчмарковский элемент в массиве?
-    [row,col]=find(strcmpi(resultDateArray{i},benchmarkFirstElement));
-    if ~isempty(row) %есть
-        %Он первый?
-        currentFirstElement=resultDateArray{i}(1);
-        if currentFirstElement{:}==benchmarkFirstElement{:} %{}скобки чтобы взять сам элемент внутри
-%         do nothing. All is ok.
-        else
-            resultArray{i}=resultArray{i}(row:end); %укоротили, отбросив последние
-            resultDateArray{i}=resultDateArray{i}(row:end);
-        end
-    else %такого элемента в массиве нет
-        for j=1:90
-           searchForDay=valOfMin-j;
-         
-%            firstDateTemp=char(resultDateArray{i}(1)); %берем для образца типа '2012/12/30/
-%            [startIndex1,endIndex1] = regexp(firstDateTemp,'/01/');
-%            firstDateTemp(endIndex1+1:end)=num2str(searchForDay); %сконструировали искомую дату
-%            [row1,col1]=find(strcmpi(resultDateArray{i},firstDateTemp));
-           formatIn = 'yyyy/mm/dd';
-           benchAsDate=datenum(benchmarkFirstElement{:},formatIn);
-           benchAsDateAddedDay=addtodate(benchAsDate, +j, 'day');
-           
-           formatOut = 'yyyy/mm/dd';
-           benchAsDateAddedDayString=datestr(benchAsDateAddedDay,formatOut);
-
-           [row1,col1]=find(strcmpi(resultDateArray{i},benchAsDateAddedDayString));           
-%сконструированная дата есть в массиве?
-           if ~isempty(row1) %есть
-               %заменяем пробелы полусуммами
-               for k=1:(j) %оно же =j
-                   
-                   %cell в double
-                   i1=row1; % индекс по которому нужно вставить
-                   op1=resultArray{i}(i1-1,1);
-                   S = sprintf('%s*', op1{:});
-                   op1 = sscanf(S, '%f*');
-                   
-                   op2=resultArray{i}(i1,1);
-                   S = sprintf('%s*', op2{:});
-                   op2 = sscanf(S, '%f*');
-                   
-                   
-                   b=( op1+op2 )/2;%значение для вставки
-                   %вставляем значение
-                   b=num2str(b);
-                   resultArray{i} = [resultArray{i}(1:i1-1,1)',b,resultArray{i}(i1:end,1)']';
-                   
-                   %вставляем дату.   
-%                    [startIndex2,endIndex2] = regexp(lastDateTemp,'/12/');
-                   
-                   
-                   formatIn = 'yyyy/mm/dd';
-                   benchAsDate=datenum(resultDateArray{i}(row1),formatIn);
-                   benchAsDateAddedDay=addtodate(benchAsDate, -1, 'day');
-
-                   formatOut = 'yyyy/mm/dd';
-                   benchAsDateAddedDayString=datestr(benchAsDateAddedDay,formatOut); 
-                   
-%                    lastDateTemp(endIndex1+1:end)=num2str(searchForDay+k);
-                   i1=row1; % индекс по которому нужно вставить
-                   b=benchAsDateAddedDayString;
-                   resultDateArray{i}=[resultDateArray{i}(1:i1-1,1)',b,resultDateArray{i}(i1:end,1)']';
-                   
-               end
-               resultArray{i}=resultArray{i}(i1:end); %укоротили массив данных, отбросив последние
-               resultDateArray{i}=resultDateArray{i}(i1:end);%укоротили массив дат, отбросив последние
-               break
-           else % нет
-               %продолжаем искать
-
-                
-           end
-        end
-    end
-end
 % находим максимальную длину и индекс этого элемента из массива дат.
 [val,ind]=max(cellfun('length',resultDateArray));
-completeVecDate=m_union(resultDateArray{:});
+pause(0.01);
 set(handles.fieldProcess,'String','40%');
+pause(0.01);
 for i=1:length(resultDateArray)
 %    resultDateArray{ind} - самый длинный вектор
 %    resultDateArray{i} - текущий вектор
-   [nonCommonVal,nonCommonInd]=setdiff(completeVecDate,resultDateArray{i});
+   [nonCommonVal,nonCommonInd]=setdiff(resultDateArray{ind},resultDateArray{i});
   
    %Превращаем cell в double
 
@@ -415,11 +325,8 @@ set(handles.fieldProcess,'String','90%');
 pause(0.01);
 % Вывод даты
 xlRange = 'A2';
-xlswrite(pathForCreate,completeVecDate,sheet,xlRange);
+xlswrite(pathForCreate,resultDateArray{ind},sheet,xlRange);
 set(handles.fieldProcess,'String','100%. Файл сформирован');
-
-
-
 
 function FieldFolderName_Callback(hObject, eventdata, handles)
 % hObject    handle to FieldFolderName (see GCBO)

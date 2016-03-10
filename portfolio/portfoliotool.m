@@ -598,7 +598,7 @@ function updateResultsPage(handles)
             weights = weights(:);      % use column vectors
             labels  = labels(:);
             % collect all components with weight < 1% as "others"
-            ind = abs(weights) > 0.01;
+            ind = abs(weights) > 0.02;
             alloc        = [weights(ind);sum(weights(~ind))];
             alloc_labels = [labels(ind);{'Others'}];
             % remove others if zero
@@ -625,6 +625,9 @@ function updateResultsPage(handles)
             end
 
             % Show weights details in table
+            ind = abs(weights) > 0.0001;
+            alloc        = [weights(ind)];
+            alloc_labels = [labels(ind)];            
             [alloc,ind] = sort(alloc,'descend');  % sort alloc and labels in descending order
             alloc_labels = alloc_labels(ind);
             data = {};
@@ -635,6 +638,8 @@ function updateResultsPage(handles)
             % Set column width
             pos = get(handles.uitable_results_weights,'Position');
             if length(alloc) > 14
+
+
                 tablewidth = pos(3) - 4 - 16;  % border + slider
             else
                 tablewidth = pos(3) - 4;  % border only
