@@ -215,7 +215,6 @@ for k=1:length(resultDateArray)
   
   [startIndex1,endIndex1] = regexp(lastDateTemp,sprintf('/%.2d/', endMonth));
   day=lastDateTemp(endIndex1+1:end);
-%   k
   lastDateInArray(1,k)= str2num(day);
   
   resultDateArray{k}=resultDateArray{k}(1:IndexForShift);
