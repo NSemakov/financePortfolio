@@ -154,6 +154,7 @@ classdef Portfolio < handle
             % compute efficient frontier with 15 portfolios
             try
                 [rsk,ret,weights] = portopt(eret,ecov,15,[],constraintSet);
+%                 [rsk,ret,weights]=frontcon(eret,ecov,15,[],[0.2; 1]);
             catch ME
                 % portopt failed
                 error_msg = ME.message;

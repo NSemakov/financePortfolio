@@ -90,9 +90,14 @@ foldernameForParse=[name ext];
 [stMonth1,stMonth2]=regexp(foldernameForParse,'^.{2}\.');
 startMonth=foldernameForParse(stMonth2+1:stMonth2+2); %выделили начальный мес€ц
 startMonth=str2double(startMonth);
+startYear=foldernameForParse(stMonth2+4:stMonth2+7);
+startYear=str2double(startYear);
+
 [endMonth1,endMonth2]=regexp(foldernameForParse,'\.[0-9]{4}$');
 endMonth=foldernameForParse(endMonth1-2:endMonth1-1); %выделили конечный мес€ц
 endMonth=str2double(endMonth);
+endYear=foldernameForParse(endMonth1+1:end);
+endYear=str2double(endYear);
 % resultArray=cell.empty;
 namesArray=cell(1);
 i=1;
@@ -119,7 +124,7 @@ for fileCount=1:length(dirContent)
         new=data{1,1}; %при первом прогоне забиваем столбец с датой
         % выбираем только те файлы, где есть данные
         % (всего пор€дка 248 торговых дней)
-        if length(new)<15
+        if length(new)<30
             fclose(fid);
             continue
         end
@@ -132,8 +137,8 @@ for fileCount=1:length(dirContent)
         for n=1:length(prepareDateArray)
            dateArray{n,1}=[prepareDateArray{n}(1:4),'/',prepareDateArray{n}(5:6),'/',prepareDateArray{n}(7:8)]; %подгон€ем под нужный формат даты          
         end   
-        match1 = regexp(dateArray(1,1),sprintf('/%.2d/', startMonth));
-        match2 = regexp(dateArray(end,1),sprintf('/%.2d/', endMonth));
+        match1 = regexp(dateArray(1,1),sprintf('%.4d/%.2d/',startYear, startMonth));
+        match2 = regexp(dateArray(end,1),sprintf('%.4d/%.2d/',endYear, endMonth));
         %ищем на мес€ц назад, если в этом мес€це ничего нет. “ак, например,
         %если задано 1 €нвар€, то записи будут только на декабрь.
 %         endMonthExtra=endMonth-1;
@@ -241,7 +246,7 @@ end
             resultDateArray{i}=resultDateArray{i}(1:row);
         end
     else %такого элемента в массиве нет
-        for j=1:90
+        for j=1:180
            
            formatIn = 'yyyy/mm/dd';
            benchAsDate=datenum(benchmarkLastElement{:},formatIn);
@@ -399,8 +404,19 @@ end
 end
 
 % a=cell.empty; for k=1:length(resultDateArray)
-% a=[a;resultDateArray{:}(1)];
-% end
+%  a=[a;resultDateArray{k}(1)];
+%  end
+% for k=1:length(resultDateArray)
+%  [row,col]=find(strcmpi(resultDateArray{k},'2013/12/18'));
+%  if ~isempty(row)
+%      k
+%      row
+%      col
+%  end
+%  end
+%'2013/12/18'
+% [row,col]=find(strcmpi([resultDateArray{end}],'2013/12/18'))
+
 % находим максимальную длину и индекс этого элемента из массива дат.
 [val,ind]=max(cellfun('length',resultDateArray));
 completeVecDate=m_union(resultDateArray{:});
@@ -419,7 +435,7 @@ for i=1:length(resultDateArray)
 
    S = sprintf('%s**', tmp1{:});
    N = sscanf(S, '%f**');
-   if i==6
+   if i==24
        a=230948;
    end;
    for k=1:length(nonCommonInd)

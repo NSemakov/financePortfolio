@@ -512,8 +512,9 @@ function updateResultsPage(handles)
     axes(handles.axes_results_efficientfrontier);
     set(handles.axes_results_efficientfrontier,'Visible','on');
     hold('on');
+    
+%     plot(annualized_rsk,annualized_ret,'*','Color','r','MarkerSize',5);
     plot(annualized_pf_rsk,annualized_pf_ret,'-o','Color','b','MarkerSize',8);
-    plot(annualized_rsk,annualized_ret,'*','Color','r','MarkerSize',5);
     legend_str = {'Efficient Portfolios','Individual Assets'};
     if ~isempty(annualized_benchmark_rsk)
         plot(annualized_benchmark_rsk,annualized_benchmark_ret,'^','Color','k')
@@ -550,20 +551,20 @@ function updateResultsPage(handles)
     set(po,'Userdata',-2);  % use -2 to find object later
     
     
+
+    
+    % Add callback for interactive selection of individual assets
+%     for i = 1:length(annualized_rsk)
+%         po = plot(annualized_rsk(i),annualized_ret(i),'*','Color','r','MarkerSize',5);
+%         set(po,'Userdata',i);  % asset number
+%         set(po,'ButtonDownFcn',@assetselection_callback);
+%     end
     % Add callback for interactive portfolio selection
     for i = 1:length(annualized_pf_rsk)
         po = plot(annualized_pf_rsk(i),annualized_pf_ret(i),'bo','MarkerFaceColor','w','MarkerSize',8);
         set(po,'Userdata',i);  % portfolio number
         set(po,'ButtonDownFcn',@portfolioselection_callback);
     end
-    
-    % Add callback for interactive selection of individual assets
-    for i = 1:length(annualized_rsk)
-        po = plot(annualized_rsk(i),annualized_ret(i),'*','Color','r','MarkerSize',5);
-        set(po,'Userdata',i);  % asset number
-        set(po,'ButtonDownFcn',@assetselection_callback);
-    end
-
         % Callback function (nested) for portfolio selection callback
         function portfolioselection_callback(hObject,event)
             % Select active portfolio
