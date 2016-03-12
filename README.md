@@ -1,5 +1,6 @@
 # financePortfolio
 v1.3 (11.03.2016)
+
 Видео инструкция доступна здесь:
 https://www.youtube.com/watch?v=P74D-bQ4g70
 
